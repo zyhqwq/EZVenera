@@ -6,7 +6,6 @@ import '../pages/categories_page.dart';
 import '../pages/local_page.dart';
 import '../pages/search_page.dart';
 import '../pages/settings_page.dart';
-import '../pages/sources_page.dart';
 import '../state/app_state_controller.dart';
 
 class MainShell extends StatefulWidget {
@@ -33,10 +32,12 @@ class _MainShellState extends State<MainShell> {
     final restoredIndex = AppStateController.instance.getInt(
       'shell.selectedIndex',
     );
-    if (restoredIndex != null &&
-        restoredIndex >= 0 &&
-        restoredIndex < destinations.length) {
-      selectedIndex = restoredIndex;
+    if (restoredIndex != null && restoredIndex >= 0) {
+      // Before Sources moved under Settings, indexes 3 and 4 represented
+      // Sources and Settings respectively. Both now open Settings.
+      selectedIndex = restoredIndex >= 3
+          ? AppDestination.settings.index
+          : restoredIndex;
     } else {
       selectedIndex = 0;
     }
@@ -46,7 +47,6 @@ class _MainShellState extends State<MainShell> {
       SearchPage(),
       CategoriesPage(),
       LocalPage(),
-      SourcesPage(),
       SettingsPage(),
     ];
   }
@@ -124,7 +124,6 @@ class _DesktopShell extends StatelessWidget {
       AppDestination.search,
       AppDestination.category,
       AppDestination.local,
-      AppDestination.sources,
     ];
 
     return Scaffold(

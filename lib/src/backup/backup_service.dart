@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
-import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
+import 'package:webdav_client/webdav_client.dart' as webdav;
 
 import '../library/favorite_controller.dart';
 import '../library/favorite_models.dart';
@@ -15,6 +15,7 @@ import '../plugin_runtime/plugin_runtime.dart';
 import '../plugin_runtime/plugin_runtime_controller.dart';
 import '../settings/settings_controller.dart';
 import '../state/app_state_controller.dart';
+import '../utils/rhttp_adapter.dart';
 
 class BackupImportReport {
   const BackupImportReport({
@@ -34,8 +35,6 @@ class BackupService {
   BackupService._();
 
   static final BackupService instance = BackupService._();
-
-  final Dio _dio = Dio(BaseOptions(validateStatus: (_) => true));
 
   Future<File> exportToTemporaryFile() async {
     final directory = await getTemporaryDirectory();
@@ -136,7 +135,6 @@ class BackupService {
   }) async {
     final file = await exportToTemporaryFile();
     final client = _WebDavClient(
-      dio: _dio,
       url: url,
       username: username,
       password: password,
@@ -168,7 +166,6 @@ class BackupService {
     }
 
     final client = _WebDavClient(
-      dio: _dio,
       url: url,
       username: username,
       password: password,
@@ -195,7 +192,6 @@ class BackupService {
     required String password,
   }) async {
     final client = _WebDavClient(
-      dio: _dio,
       url: url,
       username: username,
       password: password,
@@ -213,7 +209,6 @@ class BackupService {
     required int localDataVersion,
   }) async {
     final client = _WebDavClient(
-      dio: _dio,
       url: url,
       username: username,
       password: password,
@@ -718,49 +713,25 @@ class BackupService {
 
 class _WebDavClient {
   _WebDavClient({
-    required this.dio,
     required String url,
-    required this.username,
-    required this.password,
-  }) : baseUri = _normalizeUrl(url);
+    required String username,
+    required String password,
+  }) : _client = webdav.newClient(
+         _normalizeUrl(url),
+         user: username,
+         password: password,
+         adapter: RHttpAdapter(),
+       );
 
-  final Dio dio;
-  final Uri baseUri;
-  final String username;
-  final String password;
+  final webdav.Client _client;
 
   Future<void> upload(File file, {String? remoteName}) async {
     final name = remoteName ?? p.basename(file.path);
-    final uri = baseUri.resolve(name);
-    final response = await dio.put<dynamic>(
-      uri.toString(),
-      data: await file.readAsBytes(),
-      options: Options(
-        responseType: ResponseType.plain,
-        headers: <String, String>{
-          ..._headers(),
-          'Content-Type': 'application/octet-stream',
-        },
-      ),
-    );
-    if (!_isSuccess(response.statusCode)) {
-      throw StateError('WebDAV upload failed: HTTP ${response.statusCode}');
-    }
+    await _client.write(name, await file.readAsBytes());
   }
 
   Future<void> delete(String relativePath) async {
-    final uri = baseUri.resolve(relativePath);
-    final response = await dio.delete<dynamic>(
-      uri.toString(),
-      options: Options(responseType: ResponseType.plain, headers: _headers()),
-    );
-    // 404 is fine when pruning a file that was already removed.
-    if (response.statusCode == 404) {
-      return;
-    }
-    if (!_isSuccess(response.statusCode)) {
-      throw StateError('WebDAV delete failed: HTTP ${response.statusCode}');
-    }
+    await _client.remove(relativePath);
   }
 
   Future<File> downloadLatest() async {
@@ -773,69 +744,25 @@ class _WebDavClient {
   }
 
   Future<File> downloadNamed(_WebDavBackupFile backup) async {
-    final response = await dio.get<List<int>>(
-      baseUri.resolve(backup.relativePath).toString(),
-      options: Options(responseType: ResponseType.bytes, headers: _headers()),
-    );
-    if (!_isSuccess(response.statusCode) || response.data == null) {
-      throw StateError('WebDAV download failed: HTTP ${response.statusCode}');
-    }
     final directory = await getTemporaryDirectory();
     final file = File(p.join(directory.path, backup.name));
-    await file.writeAsBytes(response.data!, flush: true);
+    await _client.read2File(backup.relativePath, file.path);
     return file;
   }
 
   Future<List<_WebDavBackupFile>> listBackups() async {
-    final response = await dio.request<String>(
-      baseUri.toString(),
-      data: '''<?xml version="1.0" encoding="utf-8" ?>
-<propfind xmlns="DAV:"><allprop /></propfind>''',
-      options: Options(
-        method: 'PROPFIND',
-        responseType: ResponseType.plain,
-        headers: <String, String>{
-          ..._headers(),
-          'Depth': '1',
-          'Content-Type': 'application/xml; charset=utf-8',
-        },
-      ),
-    );
-    if (!_isSuccess(response.statusCode) || response.data == null) {
-      throw StateError('WebDAV list failed: HTTP ${response.statusCode}');
-    }
-    final hrefs = RegExp(
-      r'<(?:\w+:)?href>([^<]+)</(?:\w+:)?href>',
-      caseSensitive: false,
-    ).allMatches(response.data!).map((match) => _xmlDecode(match.group(1)!));
     final result = <String, _WebDavBackupFile>{};
-    for (final href in hrefs) {
-      final relativePath = _relativePathFromHref(href);
-      final name = p.posix.basename(relativePath);
-      if (name.endsWith('.ezvenera')) {
-        result[name] = _WebDavBackupFile(
-          name: name,
-          relativePath: relativePath,
-        );
+    final files = await _client.readDir('/');
+    for (final file in files) {
+      final name = file.name;
+      if (file.isDir != true && name != null && name.endsWith('.ezvenera')) {
+        result[name] = _WebDavBackupFile(name: name, relativePath: name);
       }
     }
     return result.values.toList();
   }
 
-  Map<String, String> _headers() {
-    final headers = <String, String>{};
-    if (username.isNotEmpty || password.isNotEmpty) {
-      headers['Authorization'] =
-          'Basic ${base64Encode(utf8.encode('$username:$password'))}';
-    }
-    return headers;
-  }
-
-  bool _isSuccess(int? statusCode) {
-    return statusCode != null && statusCode >= 200 && statusCode < 300;
-  }
-
-  static Uri _normalizeUrl(String value) {
+  static String _normalizeUrl(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
       throw StateError('WebDAV URL is empty.');
@@ -845,43 +772,7 @@ class _WebDavClient {
     if (!uri.hasScheme || uri.host.isEmpty) {
       throw StateError('Invalid WebDAV URL.');
     }
-    return uri;
-  }
-
-  String _relativePathFromHref(String href) {
-    final hrefUri = Uri.tryParse(href);
-    final hrefSegments = hrefUri?.pathSegments ?? Uri(path: href).pathSegments;
-    final baseSegments = baseUri.pathSegments
-        .where((segment) => segment.isNotEmpty)
-        .toList();
-    var segments = hrefSegments
-        .where((segment) => segment.isNotEmpty)
-        .map(Uri.decodeComponent)
-        .toList();
-
-    if (segments.length >= baseSegments.length) {
-      var matchesBase = true;
-      for (var index = 0; index < baseSegments.length; index++) {
-        if (Uri.decodeComponent(baseSegments[index]) != segments[index]) {
-          matchesBase = false;
-          break;
-        }
-      }
-      if (matchesBase) {
-        segments = segments.sublist(baseSegments.length);
-      }
-    }
-
-    return segments.map(Uri.encodeComponent).join('/');
-  }
-
-  String _xmlDecode(String value) {
-    return value
-        .replaceAll('&amp;', '&')
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&apos;', "'");
+    return normalized;
   }
 }
 

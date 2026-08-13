@@ -69,14 +69,17 @@ class _ReaderPageState extends State<ReaderPage> {
   int currentPage = 1;
   PageController? pageController;
   ReaderPageMode? _pageControllerMode;
+
   /// Horizontal continuous mode only (fixed item extent).
   ScrollController? _scrollController;
+
   /// Vertical continuous mode — index-based like upstream Venera.
   ItemScrollController? _itemScrollController;
   ItemPositionsListener? _itemPositionsListener;
   bool _scrollControllerIsContinuous = false;
   double _continuousItemExtent = 0;
   bool _suppressScrollListener = false;
+
   /// Seed for [ScrollablePositionedList.initialScrollIndex] when the vertical
   /// list is (re)created. Updated when opening a chapter / changing mode.
   int _verticalInitialIndex = 0;
@@ -241,7 +244,10 @@ class _ReaderPageState extends State<ReaderPage> {
   }) {
     _tearDownContinuousControllers();
     _scrollControllerIsContinuous = true;
-    final clampedPage = initialPage.clamp(1, images.isEmpty ? 1 : images.length);
+    final clampedPage = initialPage.clamp(
+      1,
+      images.isEmpty ? 1 : images.length,
+    );
     _verticalInitialIndex = (clampedPage - 1).clamp(
       0,
       images.isEmpty ? 0 : images.length - 1,
@@ -375,8 +381,16 @@ class _ReaderPageState extends State<ReaderPage> {
             SettingsController.instance.readerHorizontalContinuous,
         chapterEdgeButtons:
             SettingsController.instance.readerShowChapterEdgeButtons,
+        verticalMarginPercent:
+            SettingsController.instance.readerVerticalMarginPercent,
         onPageModeChanged: (value) async {
           await SettingsController.instance.setReaderPageMode(value);
+          if (mounted) setState(() {});
+        },
+        onVerticalMarginChanged: (value) async {
+          await SettingsController.instance.setReaderVerticalMarginPercent(
+            value,
+          );
           if (mounted) setState(() {});
         },
         onVolumeKeysChanged: (value) async {
@@ -758,32 +772,39 @@ class _ReaderPageState extends State<ReaderPage> {
             ? const NeverScrollableScrollPhysics()
             : const ClampingScrollPhysics(),
         itemBuilder: (context, index) {
-          return _ReaderImage(
-            key: _imageKeyFor(index),
-            isLocal:
-                widget.localComic != null || widget.localLibraryComic != null,
-            sourceKey: widget.sourceKey,
-            comicId: widget.comicId,
-            chapterId: currentChapterId ?? '0',
-            imageUrl: images[index],
-            index: index + 1,
-            isActive: index + 1 == currentPage,
-            fitWidth: true,
-            // Lightweight placeholder only — height changes no longer re-anchor
-            // via estimated pixel offsets.
-            reservedHeight: constraints.maxHeight * 0.6,
-            onZoomChanged: (zoomed) {
-              if (!mounted) {
-                return;
-              }
-              if (_isCurrentImageZoomed != zoomed) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    setState(() => _isCurrentImageZoomed = zoomed);
-                  }
-                });
-              }
-            },
+          final sideMargin =
+              constraints.maxWidth *
+              SettingsController.instance.readerVerticalMarginPercent /
+              100;
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: sideMargin),
+            child: _ReaderImage(
+              key: _imageKeyFor(index),
+              isLocal:
+                  widget.localComic != null || widget.localLibraryComic != null,
+              sourceKey: widget.sourceKey,
+              comicId: widget.comicId,
+              chapterId: currentChapterId ?? '0',
+              imageUrl: images[index],
+              index: index + 1,
+              isActive: index + 1 == currentPage,
+              fitWidth: true,
+              // Lightweight placeholder only — height changes no longer re-anchor
+              // via estimated pixel offsets.
+              reservedHeight: constraints.maxHeight * 0.6,
+              onZoomChanged: (zoomed) {
+                if (!mounted) {
+                  return;
+                }
+                if (_isCurrentImageZoomed != zoomed) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() => _isCurrentImageZoomed = zoomed);
+                    }
+                  });
+                }
+              },
+            ),
           );
         },
       );
@@ -2724,6 +2745,7 @@ class _ReaderSettingsDrawer extends StatelessWidget {
     required this.volumeKeys,
     required this.horizontalContinuous,
     required this.chapterEdgeButtons,
+    required this.verticalMarginPercent,
     required this.onTapToTurnChanged,
     required this.onReverseTapToTurnChanged,
     required this.onDoubleTapZoomChanged,
@@ -2733,6 +2755,7 @@ class _ReaderSettingsDrawer extends StatelessWidget {
     required this.onVolumeKeysChanged,
     required this.onHorizontalContinuousChanged,
     required this.onChapterEdgeButtonsChanged,
+    required this.onVerticalMarginChanged,
   });
 
   final VoidCallback onClose;
@@ -2745,6 +2768,7 @@ class _ReaderSettingsDrawer extends StatelessWidget {
   final bool volumeKeys;
   final bool horizontalContinuous;
   final bool chapterEdgeButtons;
+  final double verticalMarginPercent;
   final ValueChanged<bool> onTapToTurnChanged;
   final ValueChanged<bool> onReverseTapToTurnChanged;
   final ValueChanged<bool> onDoubleTapZoomChanged;
@@ -2754,6 +2778,7 @@ class _ReaderSettingsDrawer extends StatelessWidget {
   final ValueChanged<bool> onVolumeKeysChanged;
   final ValueChanged<bool> onHorizontalContinuousChanged;
   final ValueChanged<bool> onChapterEdgeButtonsChanged;
+  final ValueChanged<double> onVerticalMarginChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -2814,6 +2839,24 @@ class _ReaderSettingsDrawer extends StatelessWidget {
                     ),
                   ),
                   const Divider(height: 24),
+                  if (pageMode == ReaderPageMode.continuousTopToBottom) ...[
+                    ListTile(
+                      title: Text(l10n.readerVerticalMargin),
+                      subtitle: Text(l10n.readerPercent(verticalMarginPercent)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Slider(
+                        value: verticalMarginPercent,
+                        min: 0,
+                        max: 30,
+                        divisions: 30,
+                        label: l10n.readerPercent(verticalMarginPercent),
+                        onChanged: onVerticalMarginChanged,
+                      ),
+                    ),
+                    const Divider(height: 24),
+                  ],
                   if (pageMode != ReaderPageMode.continuousTopToBottom)
                     SwitchListTile(
                       title: Text(l10n.readerHorizontalContinuous),

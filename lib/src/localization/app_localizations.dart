@@ -109,6 +109,8 @@ class AppLocalizations {
       'reader.direction.leftToRight': 'Left to Right',
       'reader.direction.rightToLeft': 'Right to Left',
       'reader.direction.topToBottom': 'Top to Bottom',
+      'reader.verticalMargin': 'Side margin',
+      'reader.percent': '{count}%',
       'reader.volumeKeys': 'Volume-key page turning',
       'reader.volumeKeysSubtitle':
           'Use the device volume buttons to flip pages while reading.',
@@ -172,7 +174,7 @@ class AppLocalizations {
       'common.dark': 'Dark',
       'settings.reader': 'Reader',
       'settings.appearance': 'Appearance',
-      'settings.network': 'Network',
+      'settings.network': 'Sources',
       'settings.downloads': 'Downloads',
       'settings.app': 'App',
       'settings.about': 'About / Debug',
@@ -269,7 +271,7 @@ class AppLocalizations {
       'common.dark': '深色',
       'settings.reader': '阅读器',
       'settings.appearance': '外观',
-      'settings.network': '网络',
+      'settings.network': '图源',
       'settings.downloads': '下载',
       'settings.app': '应用',
       'settings.about': '关于 / 调试',
@@ -479,46 +481,62 @@ class AppLocalizations {
       isChinese ? '切换为列表视图' : _value('comicDisplay.showList');
   String get comicDisplayShowGrid =>
       isChinese ? '切换为网格视图' : _value('comicDisplay.showGrid');
-  String get readerDirection =>
-      isChinese ? '阅读方向' : _value('reader.direction');
+  String get readerDirection => isChinese ? '阅读方向' : _value('reader.direction');
   String get readerDirectionLeftToRight =>
       isChinese ? '从左至右' : _value('reader.direction.leftToRight');
   String get readerDirectionRightToLeft =>
       isChinese ? '从右至左' : _value('reader.direction.rightToLeft');
   String get readerDirectionTopToBottom =>
       isChinese ? '从上至下' : _value('reader.direction.topToBottom');
+  String get readerVerticalMargin =>
+      isChinese ? '侧边留白' : _value('reader.verticalMargin');
+  String readerPercent(num value) =>
+      (isChinese ? '{count}%' : _value('reader.percent')).replaceAll(
+        '{count}',
+        value.round().toString(),
+      );
   String get readerVolumeKeys =>
       isChinese ? '音量键翻页' : _value('reader.volumeKeys');
   String get readerVolumeKeysSubtitle => isChinese
       ? '使用手机音量上下键翻页（仅 Android）。'
       : _value('reader.volumeKeysSubtitle');
-  String get readerHorizontalContinuous => isChinese
-      ? '横向模式使用连续滚动'
-      : _value('reader.horizontalContinuous');
+  String get readerHorizontalContinuous =>
+      isChinese ? '横向模式使用连续滚动' : _value('reader.horizontalContinuous');
   String get readerHorizontalContinuousSubtitle => isChinese
       ? '左到右 / 右到左模式改为平滑滑动，而非整页翻动。'
       : _value('reader.horizontalContinuousSubtitle');
-  String get sourcesAddTitle =>
-      isChinese ? '添加图源' : _value('sources.addTitle');
-  String get sourcesAddSubtitle => isChinese
-      ? '通过链接或仓库索引安装一个图源。'
-      : _value('sources.addSubtitle');
+  String get sourcesAddTitle => isChinese ? '添加图源' : _value('sources.addTitle');
+  String get sourcesAddSubtitle =>
+      isChinese ? '通过链接或仓库索引安装一个图源。' : _value('sources.addSubtitle');
   String get sourcesUrlLabel =>
       isChinese ? '图源 URL' : _value('sources.urlLabel');
   String get sourcesUrlHint => _value('sources.urlHint');
-  String get sourcesInstall =>
-      isChinese ? '安装' : _value('sources.install');
+  String get sourcesInstall => isChinese ? '安装' : _value('sources.install');
   String get sourcesComicSourceList =>
       isChinese ? '图源列表' : _value('sources.comicSourceList');
   String get sourcesInstallLocal =>
       isChinese ? '本地安装' : _value('sources.installLocal');
-  String get sourcesReload =>
-      isChinese ? '重新加载' : _value('sources.reload');
+  String get sourcesReload => isChinese ? '重新加载' : _value('sources.reload');
   String sourcesInstalled(String name) =>
-      (isChinese ? '已安装 {name}' : _value('sources.installed'))
-          .replaceAll('{name}', name);
+      (isChinese ? '已安装 {name}' : _value('sources.installed')).replaceAll(
+        '{name}',
+        name,
+      );
   String get sourcesInstallFailed =>
       isChinese ? '安装图源失败' : _value('sources.installFailed');
+  String sourcesInstallSelected(int count) =>
+      isChinese ? '安装 ($count)' : 'Install ($count)';
+  String sourcesBatchInstallResult(int installed, int failed, String names) {
+    if (failed == 0) {
+      return isChinese
+          ? '批量安装完成：成功 $installed 个'
+          : 'Batch install complete: $installed succeeded';
+    }
+    return isChinese
+        ? '批量安装完成：成功 $installed 个，失败 $failed 个（$names）'
+        : 'Batch install complete: $installed succeeded, $failed failed ($names)';
+  }
+
   String get sourcesReloaded =>
       isChinese ? '图源已重新加载' : _value('sources.reloaded');
   String get sourcesReloadFailed =>
@@ -528,28 +546,29 @@ class AppLocalizations {
   String get sourcesNoSourcesBody => isChinese
       ? '先安装一个图源配置。现有的 Venera 图源文件只要使用了 EZVenera 支持的能力子集，都可以直接安装。'
       : _value('sources.noSourcesBody');
-  String get sourcesSettings =>
-      isChinese ? '设置' : _value('sources.settings');
-  String get sourcesAccount =>
-      isChinese ? '账号' : _value('sources.account');
+  String get sourcesSettings => isChinese ? '设置' : _value('sources.settings');
+  String get sourcesAccount => isChinese ? '账号' : _value('sources.account');
   String get sourcesPath => isChinese ? '路径' : _value('sources.path');
-  String get sourcesUpdate =>
-      isChinese ? '更新' : _value('sources.update');
-  String get sourcesDelete =>
-      isChinese ? '删除' : _value('sources.delete');
+  String get sourcesUpdate => isChinese ? '更新' : _value('sources.update');
+  String get sourcesDelete => isChinese ? '删除' : _value('sources.delete');
   String sourcesUpdated(String name) =>
-      (isChinese ? '已更新 {name}' : _value('sources.updated'))
-          .replaceAll('{name}', name);
+      (isChinese ? '已更新 {name}' : _value('sources.updated')).replaceAll(
+        '{name}',
+        name,
+      );
   String get sourcesDeleteTitle =>
       isChinese ? '删除图源' : _value('sources.deleteTitle');
   String sourcesDeleteBody(String name) =>
-      (isChinese ? '确定要删除 {name} 吗？' : _value('sources.deleteBody'))
-          .replaceAll('{name}', name);
+      (isChinese ? '确定要删除 {name} 吗？' : _value('sources.deleteBody')).replaceAll(
+        '{name}',
+        name,
+      );
   String sourcesDeleted(String name) =>
-      (isChinese ? '已删除 {name}' : _value('sources.deleted'))
-          .replaceAll('{name}', name);
-  String get sourcesLoggedIn =>
-      isChinese ? '已登录' : _value('sources.loggedIn');
+      (isChinese ? '已删除 {name}' : _value('sources.deleted')).replaceAll(
+        '{name}',
+        name,
+      );
+  String get sourcesLoggedIn => isChinese ? '已登录' : _value('sources.loggedIn');
   String get sourcesNotLoggedIn =>
       isChinese ? '未登录' : _value('sources.notLoggedIn');
   String get sourcesPasswordLogin =>
@@ -558,20 +577,13 @@ class AppLocalizations {
       isChinese ? 'Cookie 登录' : _value('sources.cookieLogin');
   String get sourcesWebLoginAvailable =>
       isChinese ? '支持网页登录' : _value('sources.webLoginAvailable');
-  String get sourcesLogIn =>
-      isChinese ? '登录' : _value('sources.logIn');
-  String get sourcesCookies =>
-      isChinese ? 'Cookie' : _value('sources.cookies');
-  String get sourcesWebview =>
-      isChinese ? '浏览器登录' : _value('sources.webview');
-  String get sourcesLogOut =>
-      isChinese ? '退出登录' : _value('sources.logOut');
-  String get sourcesReLogin =>
-      isChinese ? '重新登录' : _value('sources.reLogin');
-  String get sourcesUsername =>
-      isChinese ? '账号' : _value('sources.username');
-  String get sourcesPassword =>
-      isChinese ? '密码' : _value('sources.password');
+  String get sourcesLogIn => isChinese ? '登录' : _value('sources.logIn');
+  String get sourcesCookies => isChinese ? 'Cookie' : _value('sources.cookies');
+  String get sourcesWebview => isChinese ? '浏览器登录' : _value('sources.webview');
+  String get sourcesLogOut => isChinese ? '退出登录' : _value('sources.logOut');
+  String get sourcesReLogin => isChinese ? '重新登录' : _value('sources.reLogin');
+  String get sourcesUsername => isChinese ? '账号' : _value('sources.username');
+  String get sourcesPassword => isChinese ? '密码' : _value('sources.password');
   String get sourcesContinue =>
       isChinese ? '继续' : _value('sources.continueAction');
   String get sourcesCookieLoginTitle =>
@@ -586,9 +598,8 @@ class AppLocalizations {
       isChinese ? '重新登录成功' : _value('sources.reloginSuccess');
   String get sourcesWebviewLoginSuccess =>
       isChinese ? '浏览器登录成功' : _value('sources.webviewLoginSuccess');
-  String get sourcesWebviewNoStatus => isChinese
-      ? '此图源未提供登录状态检测。'
-      : _value('sources.webviewNoStatus');
+  String get sourcesWebviewNoStatus =>
+      isChinese ? '此图源未提供登录状态检测。' : _value('sources.webviewNoStatus');
   String get sourcesInvalidValue =>
       isChinese ? '值无效' : _value('sources.invalidValue');
   String get open => _value('common.open');
@@ -602,6 +613,24 @@ class AppLocalizations {
   String get settingsReader => _value('settings.reader');
   String get settingsAppearance => _value('settings.appearance');
   String get settingsNetwork => _value('settings.network');
+  String get settingsSources => _value('settings.network');
+  String get settingsSourceIndexes =>
+      isChinese ? '图源索引地址' : 'Source Index URLs';
+  String get settingsSourceIndexSelected =>
+      isChinese ? '当前使用' : 'Currently selected';
+  String get settingsAddSourceIndex => isChinese ? '添加索引' : 'Add Index';
+  String get settingsRestoreDefaultIndexes =>
+      isChinese ? '恢复默认索引' : 'Restore Defaults';
+  String get settingsInvalidSourceIndex => isChinese
+      ? '请输入有效的 HTTP 或 HTTPS 索引地址。'
+      : 'Enter a valid HTTP or HTTPS index URL.';
+  String get settingsSourceIndexExists =>
+      isChinese ? '该索引地址已存在。' : 'This index URL already exists.';
+  String get settingsSourceManagement =>
+      isChinese ? '图源管理' : 'Source Management';
+  String get settingsSourceManagementSubtitle => isChinese
+      ? '安装、更新、配置或删除图源'
+      : 'Install, update, configure, or remove sources';
   String get settingsDownloads => _value('settings.downloads');
   String get settingsApp => _value('settings.app');
   String get settingsAbout => _value('settings.about');

@@ -241,7 +241,8 @@ class _SourcesPageState extends State<SourcesPage> {
 
   Future<void> _browseRepoIndex() async {
     try {
-      final response = await dio.get<String>(settings.sourceIndexUrl);
+      final indexUrl = settings.sourceIndexUrl;
+      final response = await dio.get<String>(indexUrl);
       if (response.statusCode == null ||
           response.statusCode! < 200 ||
           response.statusCode! >= 300 ||
@@ -260,7 +261,7 @@ class _SourcesPageState extends State<SourcesPage> {
         return;
       }
 
-      final selectedUrl = await showModalBottomSheet<String>(
+      final selectedItems = await showModalBottomSheet<List<_RepoIndexItem>>(
         context: context,
         isScrollControlled: true,
         showDragHandle: true,
@@ -276,7 +277,7 @@ class _SourcesPageState extends State<SourcesPage> {
             return _RepoIndexItem.fromJson(Map<String, dynamic>.from(item));
           }).toList();
           return _RepoIndexSheet(
-            indexUrl: settings.sourceIndexUrl,
+            indexUrl: indexUrl,
             installedKeys: controller.sources
                 .map((source) => source.key)
                 .toSet(),
@@ -285,11 +286,35 @@ class _SourcesPageState extends State<SourcesPage> {
         },
       );
 
-      if (selectedUrl == null || !mounted) {
+      if (selectedItems == null || selectedItems.isEmpty || !mounted) {
         return;
       }
 
-      urlController.text = selectedUrl;
+      final l10n = AppLocalizations.of(context);
+      var installedCount = 0;
+      final failedNames = <String>[];
+      for (final item in selectedItems) {
+        try {
+          await controller.installFromUrl(item.resolvedUrl(indexUrl));
+          installedCount += 1;
+        } catch (_) {
+          failedNames.add(item.name.isEmpty ? item.key : item.name);
+        }
+      }
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.sourcesBatchInstallResult(
+              installedCount,
+              failedNames.length,
+              failedNames.join(', '),
+            ),
+          ),
+        ),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -1009,7 +1034,7 @@ class _SourceAccountTileState extends State<_SourceAccountTile> {
   }
 }
 
-class _RepoIndexSheet extends StatelessWidget {
+class _RepoIndexSheet extends StatefulWidget {
   const _RepoIndexSheet({
     required this.indexUrl,
     required this.installedKeys,
@@ -1021,6 +1046,13 @@ class _RepoIndexSheet extends StatelessWidget {
   final List<_RepoIndexItem> items;
 
   @override
+  State<_RepoIndexSheet> createState() => _RepoIndexSheetState();
+}
+
+class _RepoIndexSheetState extends State<_RepoIndexSheet> {
+  final selectedKeys = <String>{};
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Column(
@@ -1028,28 +1060,67 @@ class _RepoIndexSheet extends StatelessWidget {
       children: [
         ListTile(
           title: Text(l10n.sourcesComicSourceList),
-          subtitle: Text(indexUrl),
+          subtitle: Text(widget.indexUrl),
         ),
         Flexible(
           child: ListView.builder(
             shrinkWrap: true,
-            padding: EdgeInsets.only(
-              bottom: 16 + MediaQuery.paddingOf(context).bottom,
-            ),
-            itemCount: items.length,
+            itemCount: widget.items.length,
             itemBuilder: (context, index) {
-              final item = items[index];
-              final installed = installedKeys.contains(item.key);
-              return ListTile(
+              final item = widget.items[index];
+              final installed = widget.installedKeys.contains(item.key);
+              final selected = selectedKeys.contains(item.key);
+              return CheckboxListTile(
                 title: Text(item.name),
                 subtitle: Text('${item.key} - v${item.version}'),
-                trailing: installed ? const Icon(Icons.check) : null,
-                onTap: installed
+                value: installed || selected,
+                enabled: !installed,
+                secondary: installed ? const Icon(Icons.check) : null,
+                onChanged: installed
                     ? null
-                    : () =>
-                          Navigator.of(context).pop(item.resolvedUrl(indexUrl)),
+                    : (value) {
+                        setState(() {
+                          if (value == true) {
+                            selectedKeys.add(item.key);
+                          } else {
+                            selectedKeys.remove(item.key);
+                          }
+                        });
+                      },
               );
             },
+          ),
+        ),
+        const Divider(height: 1),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            12 + MediaQuery.paddingOf(context).bottom,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.cancel),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed: selectedKeys.isEmpty
+                    ? null
+                    : () {
+                        Navigator.of(context).pop(
+                          widget.items
+                              .where((item) => selectedKeys.contains(item.key))
+                              .toList(),
+                        );
+                      },
+                icon: const Icon(Icons.download_outlined),
+                label: Text(l10n.sourcesInstallSelected(selectedKeys.length)),
+              ),
+            ],
           ),
         ),
       ],

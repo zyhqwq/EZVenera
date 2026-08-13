@@ -29,11 +29,16 @@ class SettingsController extends ChangeNotifier {
 
   static final SettingsController instance = SettingsController._();
 
+  static const defaultSourceIndexUrls = <String>[
+    'https://raw.githubusercontent.com/WEP-56/EZvenera-config/main/index.json',
+    'https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json',
+  ];
   static const defaultSourceIndexUrl =
       'https://raw.githubusercontent.com/WEP-56/EZvenera-config/main/index.json';
 
   bool _initialized = false;
   ThemeMode _themeMode = ThemeMode.system;
+  List<String> _sourceIndexUrls = List<String>.of(defaultSourceIndexUrls);
   String _sourceIndexUrl = defaultSourceIndexUrl;
   bool _readerShowTapGuide = true;
   int _readerPrefetchCount = 3;
@@ -43,6 +48,7 @@ class SettingsController extends ChangeNotifier {
   bool _readerEnablePageAnimation = true;
   double _readerAutoPageIntervalSeconds = 5;
   ReaderPageMode _readerPageMode = ReaderPageMode.galleryLeftToRight;
+  double _readerVerticalMarginPercent = 0;
   bool _readerEnableVolumeKeys = true;
   bool _readerHorizontalContinuous = false;
   bool _readerShowChapterEdgeButtons = true;
@@ -62,6 +68,8 @@ class SettingsController extends ChangeNotifier {
   File? _file;
 
   ThemeMode get themeMode => _themeMode;
+  List<String> get sourceIndexUrls =>
+      List<String>.unmodifiable(_sourceIndexUrls);
   String get sourceIndexUrl => _sourceIndexUrl;
   bool get readerShowTapGuide => _readerShowTapGuide;
   int get readerPrefetchCount => _readerPrefetchCount;
@@ -71,6 +79,7 @@ class SettingsController extends ChangeNotifier {
   bool get readerEnablePageAnimation => _readerEnablePageAnimation;
   double get readerAutoPageIntervalSeconds => _readerAutoPageIntervalSeconds;
   ReaderPageMode get readerPageMode => _readerPageMode;
+  double get readerVerticalMarginPercent => _readerVerticalMarginPercent;
   bool get readerEnableVolumeKeys => _readerEnableVolumeKeys;
   bool get readerHorizontalContinuous => _readerHorizontalContinuous;
   bool get readerShowChapterEdgeButtons => _readerShowChapterEdgeButtons;
@@ -116,9 +125,9 @@ class SettingsController extends ChangeNotifier {
       final content = await _file!.readAsString();
       final decoded = jsonDecode(content);
       if (decoded is Map<String, dynamic>) {
+        final needsSourceIndexMigration = decoded['sourceIndexUrls'] is! List;
         _themeMode = _parseThemeMode(decoded['themeMode']?.toString());
-        _sourceIndexUrl =
-            decoded['sourceIndexUrl']?.toString() ?? defaultSourceIndexUrl;
+        _loadSourceIndexSettings(decoded);
         _readerShowTapGuide = decoded['readerShowTapGuide'] != false;
         _readerPrefetchCount = _parsePrefetchCount(
           (decoded['readerPrefetchCount'] as num?)?.toInt(),
@@ -136,6 +145,9 @@ class SettingsController extends ChangeNotifier {
         );
         _readerPageMode = _parseReaderPageMode(
           decoded['readerPageMode']?.toString(),
+        );
+        _readerVerticalMarginPercent = _parseReaderVerticalMarginPercent(
+          (decoded['readerVerticalMarginPercent'] as num?)?.toDouble(),
         );
         _readerEnableVolumeKeys = decoded['readerEnableVolumeKeys'] != false;
         _readerHorizontalContinuous =
@@ -168,6 +180,9 @@ class SettingsController extends ChangeNotifier {
         _readerCacheLimitMb = _parseCacheLimitMb(
           (decoded['readerCacheLimitMb'] as num?)?.toInt(),
         );
+        if (needsSourceIndexMigration) {
+          await _persist();
+        }
       }
     } else {
       await _persist();
@@ -193,7 +208,43 @@ class SettingsController extends ChangeNotifier {
     if (_sourceIndexUrl == normalized) {
       return;
     }
+    if (!_sourceIndexUrls.contains(normalized)) {
+      _sourceIndexUrls = <String>[..._sourceIndexUrls, normalized];
+    }
     _sourceIndexUrl = normalized;
+    await _persist();
+    notifyListeners();
+  }
+
+  Future<bool> addSourceIndexUrl(String value) async {
+    final normalized = value.trim();
+    if (normalized.isEmpty || _sourceIndexUrls.contains(normalized)) {
+      return false;
+    }
+    _sourceIndexUrls = <String>[..._sourceIndexUrls, normalized];
+    _sourceIndexUrl = normalized;
+    await _persist();
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> removeSourceIndexUrl(String value) async {
+    if (_sourceIndexUrls.length <= 1 || !_sourceIndexUrls.contains(value)) {
+      return;
+    }
+    final removedIndex = _sourceIndexUrls.indexOf(value);
+    _sourceIndexUrls = _sourceIndexUrls.where((item) => item != value).toList();
+    if (_sourceIndexUrl == value) {
+      _sourceIndexUrl =
+          _sourceIndexUrls[removedIndex.clamp(0, _sourceIndexUrls.length - 1)];
+    }
+    await _persist();
+    notifyListeners();
+  }
+
+  Future<void> resetSourceIndexUrls() async {
+    _sourceIndexUrls = List<String>.of(defaultSourceIndexUrls);
+    _sourceIndexUrl = defaultSourceIndexUrl;
     await _persist();
     notifyListeners();
   }
@@ -268,6 +319,16 @@ class SettingsController extends ChangeNotifier {
       return;
     }
     _readerPageMode = value;
+    await _persist();
+    notifyListeners();
+  }
+
+  Future<void> setReaderVerticalMarginPercent(double value) async {
+    final normalized = _parseReaderVerticalMarginPercent(value);
+    if (_readerVerticalMarginPercent == normalized) {
+      return;
+    }
+    _readerVerticalMarginPercent = normalized;
     await _persist();
     notifyListeners();
   }
@@ -418,6 +479,7 @@ class SettingsController extends ChangeNotifier {
   Map<String, dynamic> toBackupJson() {
     return <String, dynamic>{
       'themeMode': _themeMode.name,
+      'sourceIndexUrls': _sourceIndexUrls,
       'sourceIndexUrl': _sourceIndexUrl,
       'readerShowTapGuide': _readerShowTapGuide,
       'readerPrefetchCount': _readerPrefetchCount,
@@ -427,6 +489,7 @@ class SettingsController extends ChangeNotifier {
       'readerEnablePageAnimation': _readerEnablePageAnimation,
       'readerAutoPageIntervalSeconds': _readerAutoPageIntervalSeconds,
       'readerPageMode': _readerPageMode.name,
+      'readerVerticalMarginPercent': _readerVerticalMarginPercent,
       'readerEnableVolumeKeys': _readerEnableVolumeKeys,
       'readerHorizontalContinuous': _readerHorizontalContinuous,
       'readerShowChapterEdgeButtons': _readerShowChapterEdgeButtons,
@@ -448,8 +511,7 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> restoreFromBackupJson(Map<String, dynamic> json) async {
     _themeMode = _parseThemeMode(json['themeMode']?.toString());
-    _sourceIndexUrl =
-        json['sourceIndexUrl']?.toString() ?? defaultSourceIndexUrl;
+    _loadSourceIndexSettings(json);
     _readerShowTapGuide = json['readerShowTapGuide'] != false;
     _readerPrefetchCount = _parsePrefetchCount(
       (json['readerPrefetchCount'] as num?)?.toInt(),
@@ -462,6 +524,9 @@ class SettingsController extends ChangeNotifier {
       (json['readerAutoPageIntervalSeconds'] as num?)?.toDouble(),
     );
     _readerPageMode = _parseReaderPageMode(json['readerPageMode']?.toString());
+    _readerVerticalMarginPercent = _parseReaderVerticalMarginPercent(
+      (json['readerVerticalMarginPercent'] as num?)?.toDouble(),
+    );
     _readerEnableVolumeKeys = json['readerEnableVolumeKeys'] != false;
     _readerHorizontalContinuous = json['readerHorizontalContinuous'] == true;
     _readerShowChapterEdgeButtons =
@@ -498,6 +563,7 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> reset() async {
     _themeMode = ThemeMode.system;
+    _sourceIndexUrls = List<String>.of(defaultSourceIndexUrls);
     _sourceIndexUrl = defaultSourceIndexUrl;
     _readerShowTapGuide = true;
     _readerPrefetchCount = 3;
@@ -507,6 +573,7 @@ class SettingsController extends ChangeNotifier {
     _readerEnablePageAnimation = true;
     _readerAutoPageIntervalSeconds = 5;
     _readerPageMode = ReaderPageMode.galleryLeftToRight;
+    _readerVerticalMarginPercent = 0;
     _readerEnableVolumeKeys = true;
     _readerHorizontalContinuous = false;
     _readerShowChapterEdgeButtons = true;
@@ -531,6 +598,7 @@ class SettingsController extends ChangeNotifier {
     await _file?.writeAsString(
       jsonEncode(<String, dynamic>{
         'themeMode': _themeMode.name,
+        'sourceIndexUrls': _sourceIndexUrls,
         'sourceIndexUrl': _sourceIndexUrl,
         'readerShowTapGuide': _readerShowTapGuide,
         'readerPrefetchCount': _readerPrefetchCount,
@@ -540,6 +608,7 @@ class SettingsController extends ChangeNotifier {
         'readerEnablePageAnimation': _readerEnablePageAnimation,
         'readerAutoPageIntervalSeconds': _readerAutoPageIntervalSeconds,
         'readerPageMode': _readerPageMode.name,
+        'readerVerticalMarginPercent': _readerVerticalMarginPercent,
         'readerEnableVolumeKeys': _readerEnableVolumeKeys,
         'readerHorizontalContinuous': _readerHorizontalContinuous,
         'readerShowChapterEdgeButtons': _readerShowChapterEdgeButtons,
@@ -568,6 +637,38 @@ class SettingsController extends ChangeNotifier {
     };
   }
 
+  void _loadSourceIndexSettings(Map<String, dynamic> json) {
+    final selected = json['sourceIndexUrl']?.toString().trim();
+    final storedList = json['sourceIndexUrls'];
+    final urls = <String>[];
+
+    void add(String? value) {
+      final normalized = value?.trim() ?? '';
+      if (normalized.isNotEmpty && !urls.contains(normalized)) {
+        urls.add(normalized);
+      }
+    }
+
+    if (storedList is List) {
+      for (final value in storedList) {
+        add(value?.toString());
+      }
+    } else {
+      for (final value in defaultSourceIndexUrls) {
+        add(value);
+      }
+    }
+    add(selected);
+    if (urls.isEmpty) {
+      urls.addAll(defaultSourceIndexUrls);
+    }
+
+    _sourceIndexUrls = urls;
+    _sourceIndexUrl = selected != null && urls.contains(selected)
+        ? selected
+        : urls.first;
+  }
+
   int _parsePrefetchCount(int? value) {
     if (value == null) {
       return 3;
@@ -580,6 +681,10 @@ class SettingsController extends ChangeNotifier {
       return 5;
     }
     return value.clamp(1, 15).toDouble();
+  }
+
+  double _parseReaderVerticalMarginPercent(double? value) {
+    return (value ?? 0).clamp(0, 30).toDouble();
   }
 
   ReaderPageMode _parseReaderPageMode(String? value) {

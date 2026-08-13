@@ -9,6 +9,7 @@ import '../plugin_runtime/plugin_runtime_controller.dart';
 import '../settings/settings_controller.dart';
 import '../shell/main_shell.dart';
 import '../state/app_state_controller.dart';
+import '../utils/rhttp_adapter.dart';
 
 class AppBootstrap extends StatefulWidget {
   const AppBootstrap({super.key});
@@ -21,6 +22,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
   late final Future<void> _future = _initialize();
 
   Future<void> _initialize() async {
+    await RHttpAdapter.initialize();
     await SettingsController.instance.initialize();
     await AppStateController.instance.initialize();
     await PluginRuntimeController.instance.initialize();

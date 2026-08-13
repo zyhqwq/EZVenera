@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.8.4+16
+version: 1.8.7+17
 
 environment:
   sdk: ^3.10.4
@@ -53,6 +53,14 @@ dependencies:
       url: https://github.com/venera-app/lodepng_flutter
       ref: ac7d05dde32e8d728102a9ff66e6b55f05d94ba1
   flutter_inappwebview: ^6.1.5
+  # rhttp 0.15.1 was generated with flutter_rust_bridge 2.11.1 and rejects
+  # newer runtimes at startup. Keep this aligned with upstream Venera's lock.
+  flutter_rust_bridge: 2.11.1
+  rhttp: ^0.15.1
+  webdav_client:
+    git:
+      url: https://github.com/venera-app/webdav_client
+      ref: 2f669c98fb81cff1c64fee93466a1475c77e4273
   cupertino_icons: ^1.0.8
   file_selector: ^1.0.3
   url_launcher: ^6.3.2

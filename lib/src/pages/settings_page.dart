@@ -21,6 +21,7 @@ import '../plugin_runtime/plugin_runtime_controller.dart';
 import '../reader/reader_image_cache.dart';
 import '../settings/settings_controller.dart';
 import '../utils/platform_directory.dart';
+import 'sources_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -86,10 +87,10 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 14),
           _SettingsMenuCard(
-            title: l10n.settingsNetwork,
+            title: l10n.settingsSources,
             subtitle: controller.sourceIndexUrl,
-            icon: Icons.public_outlined,
-            onTap: () => _openSection(context, const _NetworkSettingsPage()),
+            icon: Icons.extension_outlined,
+            onTap: () => _openSection(context, const _SourcesSettingsPage()),
           ),
           const SizedBox(height: 14),
           _SettingsMenuCard(
@@ -380,17 +381,16 @@ class _AppearanceSettingsPageState extends State<_AppearanceSettingsPage> {
   }
 }
 
-class _NetworkSettingsPage extends StatefulWidget {
-  const _NetworkSettingsPage();
+class _SourcesSettingsPage extends StatefulWidget {
+  const _SourcesSettingsPage();
 
   @override
-  State<_NetworkSettingsPage> createState() => _NetworkSettingsPageState();
+  State<_SourcesSettingsPage> createState() => _SourcesSettingsPageState();
 }
 
-class _NetworkSettingsPageState extends State<_NetworkSettingsPage> {
+class _SourcesSettingsPageState extends State<_SourcesSettingsPage> {
   final controller = SettingsController.instance;
-  late final TextEditingController sourceIndexController =
-      TextEditingController(text: controller.sourceIndexUrl);
+  final sourceIndexController = TextEditingController();
 
   @override
   void initState() {
@@ -410,24 +410,49 @@ class _NetworkSettingsPageState extends State<_NetworkSettingsPage> {
     final l10n = AppLocalizations.of(context);
 
     return _SettingsSectionScaffold(
-      title: l10n.settingsNetwork,
+      title: l10n.settingsSources,
       child: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           _SettingsGroup(
-            title: l10n.settingsNetwork,
+            title: l10n.settingsSourceIndexes,
             icon: Icons.public_outlined,
             children: [
-              ListTile(
-                title: Text(l10n.settingsSourceIndexUrl),
-                subtitle: Text(
-                  controller.sourceIndexUrl,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              RadioGroup<String>(
+                groupValue: controller.sourceIndexUrl,
+                onChanged: (value) {
+                  if (value != null) {
+                    controller.setSourceIndexUrl(value);
+                  }
+                },
+                child: Column(
+                  children: [
+                    for (final url in controller.sourceIndexUrls)
+                      ListTile(
+                        leading: Radio<String>(value: url),
+                        title: Text(
+                          url,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: url == controller.sourceIndexUrl
+                            ? Text(l10n.settingsSourceIndexSelected)
+                            : null,
+                        trailing: IconButton(
+                          tooltip: l10n.delete,
+                          onPressed: controller.sourceIndexUrls.length <= 1
+                              ? null
+                              : () => controller.removeSourceIndexUrl(url),
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                        onTap: () => controller.setSourceIndexUrl(url),
+                      ),
+                  ],
                 ),
               ),
+              const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     TextField(
@@ -437,29 +462,23 @@ class _NetworkSettingsPageState extends State<_NetworkSettingsPage> {
                         labelText: l10n.settingsIndexUrl,
                         hintText: SettingsController.defaultSourceIndexUrl,
                       ),
-                      onSubmitted: controller.setSourceIndexUrl,
+                      keyboardType: TextInputType.url,
+                      onSubmitted: (_) => _addSourceIndex(),
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        FilledButton(
-                          onPressed: () {
-                            controller.setSourceIndexUrl(
-                              sourceIndexController.text,
-                            );
-                          },
-                          child: Text(l10n.save),
+                        FilledButton.icon(
+                          onPressed: _addSourceIndex,
+                          icon: const Icon(Icons.add),
+                          label: Text(l10n.settingsAddSourceIndex),
                         ),
-                        const SizedBox(width: 12),
-                        OutlinedButton(
-                          onPressed: () {
-                            sourceIndexController.text =
-                                SettingsController.defaultSourceIndexUrl;
-                            controller.setSourceIndexUrl(
-                              SettingsController.defaultSourceIndexUrl,
-                            );
-                          },
-                          child: Text(l10n.reset),
+                        OutlinedButton.icon(
+                          onPressed: controller.resetSourceIndexUrls,
+                          icon: const Icon(Icons.restore),
+                          label: Text(l10n.settingsRestoreDefaultIndexes),
                         ),
                       ],
                     ),
@@ -468,17 +487,58 @@ class _NetworkSettingsPageState extends State<_NetworkSettingsPage> {
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          _SettingsGroup(
+            title: l10n.settingsSourceManagement,
+            icon: Icons.extension_outlined,
+            children: [
+              ListTile(
+                title: Text(l10n.settingsSourceManagement),
+                subtitle: Text(l10n.settingsSourceManagementSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => _SettingsSectionScaffold(
+                        title: l10n.settingsSourceManagement,
+                        child: const SourcesPage(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  void _handleChange() {
+  Future<void> _addSourceIndex() async {
+    final l10n = AppLocalizations.of(context);
+    final value = sourceIndexController.text.trim();
+    final uri = Uri.tryParse(value);
+    if (value.isEmpty ||
+        uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.host.isEmpty) {
+      _showSettingsMessage(context, l10n.settingsInvalidSourceIndex);
+      return;
+    }
+    final added = await controller.addSourceIndexUrl(value);
     if (!mounted) {
       return;
     }
-    if (sourceIndexController.text != controller.sourceIndexUrl) {
-      sourceIndexController.text = controller.sourceIndexUrl;
+    if (!added) {
+      _showSettingsMessage(context, l10n.settingsSourceIndexExists);
+      return;
+    }
+    sourceIndexController.clear();
+  }
+
+  void _handleChange() {
+    if (!mounted) {
+      return;
     }
     setState(() {});
   }
@@ -910,9 +970,7 @@ class _BackupSettingsPageState extends State<_BackupSettingsPage> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       secondary: const Icon(Icons.sync),
-                      title: Text(
-                        _text(l10n, '自动同步数据', 'Auto Sync Data'),
-                      ),
+                      title: Text(_text(l10n, '自动同步数据', 'Auto Sync Data')),
                       subtitle: Text(
                         _text(
                           l10n,
@@ -927,9 +985,7 @@ class _BackupSettingsPageState extends State<_BackupSettingsPage> {
                       const SizedBox(height: 4),
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primaryContainer
+                          color: Theme.of(context).colorScheme.primaryContainer
                               .withValues(alpha: 0.55),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -941,9 +997,9 @@ class _BackupSettingsPageState extends State<_BackupSettingsPage> {
                               Icon(
                                 Icons.info_outline,
                                 size: 20,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimaryContainer,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -1074,44 +1130,59 @@ class _BackupSettingsPageState extends State<_BackupSettingsPage> {
       );
       return;
     }
-    await controller.setWebDavAutoSync(value);
-    if (!mounted) {
-      return;
-    }
     if (value) {
       final navigator = Navigator.of(context, rootNavigator: true);
       try {
+        late bool downloaded;
         await _runBusyDialog(navigator, () async {
-          // First enable: pull remote if newer (upstream continues with up/down).
-          await WebDavAutoSync.instance.downloadData();
+          downloaded = await WebDavAutoSync.instance.downloadData();
         });
         if (!mounted) {
           return;
         }
-        final error = WebDavAutoSync.instance.lastError;
-        if (error != null) {
+        if (!downloaded) {
+          await controller.setWebDavAutoSync(false);
+          if (!mounted) {
+            return;
+          }
+          final error = WebDavAutoSync.instance.lastError;
           _showSettingsMessage(
             context,
-            _text(l10n, '自动同步已开启，但首次拉取失败：$error',
-                'Auto-sync on, but initial pull failed: $error'),
+            _text(
+              l10n,
+              '首次拉取失败，自动同步未开启：$error',
+              'Initial pull failed; auto-sync was not enabled: $error',
+            ),
           );
         } else {
+          await controller.setWebDavAutoSync(true);
+          if (!mounted) {
+            return;
+          }
           _showSettingsMessage(
             context,
             _text(l10n, '自动同步已开启。', 'Auto-sync enabled.'),
           );
         }
       } catch (error) {
+        await controller.setWebDavAutoSync(false);
         if (!mounted) {
           return;
         }
         _showSettingsMessage(
           context,
-          _text(l10n, '自动同步已开启，但首次拉取失败：$error',
-              'Auto-sync on, but initial pull failed: $error'),
+          _text(
+            l10n,
+            '首次拉取失败，自动同步未开启：$error',
+            'Initial pull failed; auto-sync was not enabled: $error',
+          ),
         );
       }
     } else {
+      await controller.setWebDavAutoSync(false);
+      if (!mounted) {
+        return;
+      }
       _showSettingsMessage(
         context,
         _text(l10n, '自动同步已关闭。', 'Auto-sync disabled.'),
@@ -1126,8 +1197,8 @@ class _BackupSettingsPageState extends State<_BackupSettingsPage> {
       await _saveWebDavConfig(showMessage: false);
       await _runBusyDialog(navigator, () async {
         // Manual upload also bumps dataVersion so auto-sync stays coherent.
-        final dataVersion =
-            await SettingsController.instance.incrementDataVersion();
+        final dataVersion = await SettingsController.instance
+            .incrementDataVersion();
         await BackupService.instance.uploadVersionedToWebDav(
           url: urlController.text,
           username: usernameController.text,
@@ -1211,10 +1282,7 @@ class _BackupSettingsPageState extends State<_BackupSettingsPage> {
       if (!mounted) {
         return;
       }
-      _showSettingsMessage(
-        context,
-        _exportErrorMessage(l10n, error),
-      );
+      _showSettingsMessage(context, _exportErrorMessage(l10n, error));
     }
   }
 
@@ -1493,7 +1561,9 @@ class _AboutSettingsPageState extends State<_AboutSettingsPage> {
           if (!n.endsWith('.exe') || n.endsWith('.sha256')) {
             return -1;
           }
-          if (n.contains('setup') || n.contains('windows') || n.contains('installer')) {
+          if (n.contains('setup') ||
+              n.contains('windows') ||
+              n.contains('installer')) {
             return 100;
           }
           return 10;
@@ -1516,7 +1586,9 @@ class _AboutSettingsPageState extends State<_AboutSettingsPage> {
       assets,
       prefer: (name) {
         final n = name.toLowerCase();
-        if (!n.endsWith('.apk') || n.contains('.sha256') || n.endsWith('.apk.sha256')) {
+        if (!n.endsWith('.apk') ||
+            n.contains('.sha256') ||
+            n.endsWith('.apk.sha256')) {
           return -1;
         }
         // Higher score wins.
