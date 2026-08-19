@@ -38,7 +38,7 @@ class PluginImageLoader {
         ? const PluginImageRequest()
         : source.comic!.onThumbnailLoad!(imageUrl);
 
-    return _loadBytes(imageUrl, request, remainingRetries: 0);
+    return _loadBytes(imageUrl, request, remainingRetries: 5);
   }
 
   Future<Uint8List> _loadBytes(
