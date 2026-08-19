@@ -1075,6 +1075,19 @@ class _TagsBlock extends StatelessWidget {
   final bool canSearchTags;
   final void Function(String namespace, String tag) onTagTap;
 
+  static const _namespaceLabels = <String, String>{
+    'author': '作者',
+    'genre': '类型',
+    'works': '作品',
+    'actors': '演员',
+    'status': '状态',
+    'other': '其他',
+  };
+
+  static String _namespaceLabel(String namespace) {
+    return _namespaceLabels[namespace] ?? namespace;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1087,7 +1100,7 @@ class _TagsBlock extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                entry.key,
+                _namespaceLabel(entry.key),
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
