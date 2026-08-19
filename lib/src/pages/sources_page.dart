@@ -122,11 +122,6 @@ class _SourcesPageState extends State<SourcesPage> {
                   label: Text(l10n.sourcesInstallLocal),
                 ),
                 OutlinedButton.icon(
-                  onPressed: controller.isBusy ? null : _installBuiltinSources,
-                  icon: const Icon(Icons.inventory_2_outlined),
-                  label: Text(l10n.sourcesInstallBuiltin),
-                ),
-                OutlinedButton.icon(
                   onPressed: controller.isBusy ? null : _reloadSources,
                   icon: const Icon(Icons.refresh),
                   label: Text(l10n.sourcesReload),
@@ -241,43 +236,6 @@ class _SourcesPageState extends State<SourcesPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.toString())));
-    }
-  }
-
-  Future<void> _installBuiltinSources() async {
-    final l10n = AppLocalizations.of(context);
-    try {
-      const builtinPlugins = <(String, String)>[
-        ('assets/plugins/jm_comic.js', 'jm_comic.js'),
-      ];
-      var installedCount = 0;
-      final failedNames = <String>[];
-      for (final (assetPath, fileName) in builtinPlugins) {
-        try {
-          final source = await controller.installFromAsset(assetPath, fileName);
-          installedCount += 1;
-          if (!mounted) {
-            return;
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.sourcesInstalled(source.name))),
-          );
-        } catch (_) {
-          failedNames.add(fileName);
-        }
-      }
-      if (failedNames.isNotEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.sourcesInstallFailed)));
-      }
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.sourcesInstallFailed)));
     }
   }
 

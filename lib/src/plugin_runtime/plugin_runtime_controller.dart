@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 import 'models.dart';
 import 'plugin_runtime.dart';
@@ -91,22 +90,6 @@ class PluginRuntimeController extends ChangeNotifier {
       final source = await _runtime.installFromString(
         javascript,
         fileName.isEmpty ? 'source.js' : fileName,
-        null,
-      );
-      _initialized = true;
-      return source;
-    });
-  }
-
-  Future<PluginSource> installFromAsset(
-    String assetPath,
-    String fileName,
-  ) async {
-    return _runBusy(() async {
-      final javascript = await rootBundle.loadString(assetPath);
-      final source = await _runtime.installFromString(
-        javascript,
-        fileName,
         null,
       );
       _initialized = true;
