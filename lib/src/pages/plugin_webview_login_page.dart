@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../plugin_runtime/models.dart';
+import '../localization/app_localizations.dart';
 import '../plugin_runtime/plugin_runtime.dart';
 
 class PluginWebviewLoginPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _PluginWebviewLoginPageState extends State<PluginWebviewLoginPage> {
 
   InAppWebViewController? controller;
   double progress = 0;
-  String pageTitle = 'Webview Login';
+  String pageTitle = '';
   String currentUrl = '';
   bool isCompleting = false;
   late Future<WebViewEnvironment?> _environment;
@@ -76,7 +77,7 @@ class _PluginWebviewLoginPageState extends State<PluginWebviewLoginPage> {
               IconButton(
                 onPressed: controller == null ? null : _reload,
                 icon: const Icon(Icons.refresh),
-                tooltip: 'Reload',
+                tooltip: AppLocalizations.of(context).webviewReload,
               ),
             ],
           ),
@@ -96,7 +97,7 @@ class _PluginWebviewLoginPageState extends State<PluginWebviewLoginPage> {
                   },
                   onTitleChanged: (nextController, title) {
                     pageTitle = (title == null || title.trim().isEmpty)
-                        ? 'Webview Login'
+                        ? AppLocalizations.of(context).webviewLogin
                         : title;
                     if (mounted) {
                       setState(() {});
@@ -308,7 +309,7 @@ class _LoginError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(AppLocalizations.of(context).detailsRetry),
             ),
           ],
         ),

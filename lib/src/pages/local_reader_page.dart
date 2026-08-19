@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../library/history_controller.dart';
 import '../library/history_models.dart';
+import '../localization/app_localizations.dart';
 import '../local_library/local_library_models.dart';
 import '../utils/natural_sort.dart';
 
@@ -82,7 +83,7 @@ class _LocalReaderPageState extends State<LocalReaderPage> {
                         return Container(
                           height: 220,
                           alignment: Alignment.center,
-                          child: const Text('Failed to load image'),
+                          child: Text(AppLocalizations.of(context).detailsLoadImageFailed),
                         );
                       },
                     ),

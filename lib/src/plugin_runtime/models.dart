@@ -342,6 +342,7 @@ class PluginComicDetails {
     this.subId,
     this.url,
     this.maxPage,
+    this.comments,
   });
 
   final String id;
@@ -356,6 +357,31 @@ class PluginComicDetails {
   final String? subId;
   final String? url;
   final int? maxPage;
+  final List<PluginComicComment>? comments;
+}
+
+class PluginComicComment {
+  const PluginComicComment({
+    required this.userName,
+    required this.content,
+    this.avatar,
+    this.time,
+    this.replyCount,
+    this.id,
+    this.isLiked,
+    this.score,
+    this.voteStatus,
+  });
+
+  final String userName;
+  final String content;
+  final String? avatar;
+  final String? time;
+  final int? replyCount;
+  final String? id;
+  final bool? isLiked;
+  final int? score;
+  final int? voteStatus;
 }
 
 class PluginComicChapters {

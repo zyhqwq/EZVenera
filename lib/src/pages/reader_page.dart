@@ -1107,7 +1107,7 @@ class _ReaderPageState extends State<ReaderPage> {
     final chapterItems = _chapterItems;
     if (chapterItems.isEmpty) {
       currentChapterTitle = currentChapterTitle.isEmpty
-          ? 'Read'
+          ? AppLocalizations.of(context).detailsRead
           : currentChapterTitle;
       return;
     }
@@ -1966,18 +1966,21 @@ class _ReaderImageState extends State<_ReaderImage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Failed to load page ${widget.index}',
+                  '${AppLocalizations.of(context).readerLoadPageFailed} ${widget.index}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: theme.colorScheme.error,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(snapshot.error?.toString() ?? 'Unknown error'),
+                Text(
+                  snapshot.error?.toString() ??
+                      AppLocalizations.of(context).commonUnknownError,
+                ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: _retry,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
+                  label: Text(AppLocalizations.of(context).detailsRetry),
                 ),
               ],
             ),
@@ -2213,7 +2216,7 @@ class _ReaderError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(AppLocalizations.of(context).detailsRetry),
             ),
           ],
         ),

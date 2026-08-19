@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../localization/app_localizations.dart';
 import '../plugin_runtime/models.dart';
 import '../plugin_runtime/plugin_runtime_controller.dart';
 import '../state/app_state_controller.dart';
@@ -156,12 +157,13 @@ class _CategorySourcePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final children = <Widget>[];
 
     if (category.enableRankingPage) {
       children.add(
         _PartSection(
-          title: 'Actions',
+          title: l10n.categoryActions,
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -175,13 +177,13 @@ class _CategorySourcePage extends StatelessWidget {
                     MaterialPageRoute<void>(
                       builder: (context) => CategoryComicsPage(
                         source: source,
-                        pageTitle: '${source.name} Ranking',
+                        pageTitle: '${source.name} ${l10n.categoryRanking}',
                         ranking: source.categoryComics!.ranking,
                       ),
                     ),
                   );
                 },
-                child: const Text('Ranking'),
+                child: Text(l10n.categoryRanking),
               ),
             ],
           ),

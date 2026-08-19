@@ -7,6 +7,7 @@ import '../library/favorite_controller.dart';
 import '../library/favorite_models.dart';
 import '../library/history_controller.dart';
 import '../library/history_models.dart';
+import '../localization/app_localizations.dart';
 import '../plugin_runtime/models.dart';
 import '../plugin_runtime/plugin_runtime_controller.dart';
 import '../plugin_runtime/services/plugin_image_loader.dart';
@@ -80,7 +81,7 @@ class _ComicDetailsPageState extends State<ComicDetailsPage> {
           if (details == null) {
             _hideBackToTopAfterBuild();
             return _ComicDetailsError(
-              message: 'No detail data returned.',
+              message: AppLocalizations.of(context).detailsLoadFailed,
               onRetry: _retry,
             );
           }
@@ -208,7 +209,10 @@ class _ComicDetailsPageState extends State<ComicDetailsPage> {
   ) {
     final chapters = details.chapters;
     if (chapters == null) {
-      return const _ChapterSelection(id: null, title: 'Read');
+      return _ChapterSelection(
+        id: null,
+        title: AppLocalizations.of(context).detailsRead,
+      );
     }
 
     if (chapters.isGrouped) {
@@ -261,7 +265,7 @@ class _ComicDetailsPageState extends State<ComicDetailsPage> {
       }
       return _ChapterSelection(
         id: history.chapterId,
-        title: history.chapterTitle ?? 'Read',
+        title: history.chapterTitle ?? AppLocalizations.of(context).detailsRead,
       );
     }
 
@@ -343,7 +347,9 @@ class _ComicDetailsPageState extends State<ComicDetailsPage> {
     );
     final handler = source?.comic?.onClickTag;
     if (source == null || handler == null) {
-      _showMessage('This source does not support tag search.');
+      _showMessage(
+        AppLocalizations.of(context).detailsUnsupportedTagSearch,
+      );
       return;
     }
 
@@ -363,7 +369,9 @@ class _ComicDetailsPageState extends State<ComicDetailsPage> {
   void _openJumpTarget(PluginSource source, PluginJumpTarget target) {
     if (target.page == 'category') {
       if (source.categoryComics == null) {
-        _showMessage('This source does not support categories.');
+        _showMessage(
+          AppLocalizations.of(context).detailsUnsupportedCategories,
+        );
         return;
       }
       final category =
@@ -385,7 +393,7 @@ class _ComicDetailsPageState extends State<ComicDetailsPage> {
 
     if (target.page == 'search') {
       if (source.search == null) {
-        _showMessage('This source does not support search.');
+        _showMessage(AppLocalizations.of(context).detailsUnsupportedSearch);
         return;
       }
       final optionsRaw = target.attributes?['options'];
@@ -436,7 +444,13 @@ class _ComicDetailsPageState extends State<ComicDetailsPage> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Download started for ${details.title}')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).detailsDownloadStartedWith(
+              details.title,
+            ),
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) {
@@ -506,12 +520,13 @@ class _ComicDetailsPageState extends State<ComicDetailsPage> {
     return showModalBottomSheet<List<ChapterDownloadRequest>>(
       context: context,
       builder: (context) {
+        final l10n = AppLocalizations.of(context);
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: const Text('Download All Chapters'),
+                title: Text(l10n.detailsDownloadAll),
                 leading: const Icon(Icons.download_done_outlined),
                 onTap: () => Navigator.of(context).pop(chapters),
               ),
@@ -576,6 +591,7 @@ class _ComicDetailsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final description = (details.description ?? summary.description).trim();
     final source = PluginRuntimeController.instance.find(summary.sourceKey);
     final showPreview =
@@ -608,10 +624,13 @@ class _ComicDetailsBody extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
                 child: _SectionCard(
-                  title: 'Description',
+                  title: l10n.detailsDescription,
                   child: GestureDetector(
-                    onLongPress: () =>
-                        _copyToClipboard(context, description, 'Description'),
+                    onLongPress: () => _copyToClipboard(
+                      context,
+                      description,
+                      l10n.detailsDescription,
+                    ),
                     child: Text(
                       description,
                       style: Theme.of(
@@ -626,7 +645,7 @@ class _ComicDetailsBody extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
                 child: _SectionCard(
-                  title: 'Tags',
+                  title: l10n.detailsTags,
                   child: _TagsBlock(
                     tags: details.tags,
                     canSearchTags: source?.comic?.onClickTag != null,
@@ -640,7 +659,7 @@ class _ComicDetailsBody extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
                 child: _SectionCard(
-                  title: 'Preview',
+                  title: l10n.detailsPreview,
                   child: _PreviewGrid(
                     sourceKey: summary.sourceKey,
                     comicId: details.id,
@@ -656,17 +675,29 @@ class _ComicDetailsBody extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
                 child: _SectionCard(
-                  title: 'Chapters',
+                  title: l10n.detailsChapters,
                   trailing: TextButton.icon(
                     onPressed: onToggleChapterOrder,
                     icon: const Icon(Icons.swap_vert, size: 18),
-                    label: Text(chaptersReversed ? 'Original' : 'Reverse'),
+                    label: Text(
+                      chaptersReversed ? l10n.detailsOriginal : l10n.detailsReverse,
+                    ),
                   ),
                   child: _ChaptersView(
                     chapters: details.chapters!,
                     reversed: chaptersReversed,
                     onChapterSelected: onChapterSelected,
                   ),
+                ),
+              ),
+            ],
+            if (details.comments != null && details.comments!.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
+                child: _SectionCard(
+                  title: l10n.detailsComments,
+                  child: _CommentsBlock(comments: details.comments!),
                 ),
               ),
             ],
@@ -714,8 +745,11 @@ class _HeaderRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
-                  onLongPress: () =>
-                      _copyToClipboard(context, details.title, 'Title'),
+                  onLongPress: () => _copyToClipboard(
+                    context,
+                    details.title,
+                    AppLocalizations.of(context).detailsTitle,
+                  ),
                   child: Text(
                     details.title,
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -727,8 +761,11 @@ class _HeaderRow extends StatelessWidget {
                 if (subtitle.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   GestureDetector(
-                    onLongPress: () =>
-                        _copyToClipboard(context, subtitle, 'Subtitle'),
+                    onLongPress: () => _copyToClipboard(
+                    context,
+                    subtitle,
+                    AppLocalizations.of(context).detailsSubtitle,
+                  ),
                     child: Text(
                       subtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -788,10 +825,12 @@ class _ActionStrip extends StatelessWidget {
   final VoidCallback onDownload;
   final VoidCallback onFavorite;
 
-  String get _readLabel => hasHistory ? 'Continue' : 'Read';
+  String _readLabelOf(AppLocalizations l10n) =>
+      hasHistory ? l10n.detailsContinue : l10n.detailsRead;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final iconRow = SizedBox(
       height: 64,
       child: ListView(
@@ -801,20 +840,20 @@ class _ActionStrip extends StatelessWidget {
           if (!isMobile)
             _IconAction(
               icon: Icons.play_circle_outline,
-              label: _readLabel,
+              label: _readLabelOf(l10n),
               color: Colors.orange,
               onPressed: onRead,
             ),
           if (!isMobile)
             _IconAction(
               icon: Icons.download_outlined,
-              label: 'Download',
+              label: l10n.detailsDownload,
               color: Colors.cyan,
               onPressed: onDownload,
             ),
           _IconAction(
             icon: isFavorite ? Icons.bookmark : Icons.bookmark_outline,
-            label: isFavorite ? 'Favorited' : 'Favorite',
+            label: isFavorite ? l10n.detailsFavorited : l10n.detailsFavorite,
             color: Colors.purple,
             active: isFavorite,
             onPressed: onFavorite,
@@ -837,14 +876,14 @@ class _ActionStrip extends StatelessWidget {
               Expanded(
                 child: FilledButton.tonal(
                   onPressed: onDownload,
-                  child: const Text('Download'),
+                  child: Text(l10n.detailsDownload),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
                   onPressed: onRead,
-                  child: Text(_readLabel),
+                  child: Text(_readLabelOf(l10n)),
                 ),
               ),
             ],
@@ -920,6 +959,111 @@ class _IconAction extends StatelessWidget {
   }
 }
 
+class _CommentsBlock extends StatelessWidget {
+  const _CommentsBlock({required this.comments});
+
+  final List<PluginComicComment> comments;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final comment in comments.take(50)) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  child: Text(
+                    comment.userName.isNotEmpty
+                        ? String.fromCharCode(comment.userName.runes.first)
+                        : '?',
+                    style: theme.textTheme.labelMedium,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              comment.userName,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (comment.time != null && comment.time!.isNotEmpty)
+                            Text(
+                              comment.time!,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        comment.content,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 12,
+                        children: [
+                          if (comment.score != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.thumb_up_outlined,
+                                  size: 14,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${comment.score}',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (comment.replyCount != null &&
+                              comment.replyCount! > 0)
+                            Text(
+                              '${comment.replyCount} ${l10n.detailsCommentReplies}',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (comment != comments.last) const Divider(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
 class _TagsBlock extends StatelessWidget {
   const _TagsBlock({
     required this.tags,
@@ -963,7 +1107,11 @@ class _TagsBlock extends StatelessWidget {
                       onTap: canSearchTags
                           ? () => onTagTap(entry.key, tag)
                           : null,
-                      onLongPress: () => _copyToClipboard(context, tag, 'Tag'),
+                      onLongPress: () => _copyToClipboard(
+                    context,
+                    tag,
+                    AppLocalizations.of(context).detailsTag,
+                  ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -1081,14 +1229,17 @@ class _PreviewGridState extends State<_PreviewGrid> {
       return Column(
         children: [
           Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-          TextButton(onPressed: _loadNext, child: const Text('Retry')),
+          TextButton(
+            onPressed: _loadNext,
+            child: Text(AppLocalizations.of(context).detailsRetry),
+          ),
         ],
       );
     }
 
     if (_thumbnails.isEmpty) {
       return Text(
-        'No previews available.',
+        AppLocalizations.of(context).detailsNoPreviews,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -1132,7 +1283,10 @@ class _PreviewGridState extends State<_PreviewGrid> {
         if (_error != null) ...[
           const SizedBox(height: 8),
           Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-          TextButton(onPressed: _loadNext, child: const Text('Retry')),
+          TextButton(
+            onPressed: _loadNext,
+            child: Text(AppLocalizations.of(context).detailsRetry),
+          ),
         ] else if (_loading) ...[
           const SizedBox(height: 12),
           const Center(
@@ -1261,7 +1415,10 @@ void _copyToClipboard(BuildContext context, String text, [String? label]) {
     return;
   }
   Clipboard.setData(ClipboardData(text: value));
-  final message = label == null ? 'Copied' : '$label copied';
+  final l10n = AppLocalizations.of(context);
+  final message = label == null
+      ? l10n.detailsCopied
+      : '$label ${l10n.detailsCopied}';
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
@@ -1549,7 +1706,7 @@ class _ComicDetailsError extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(AppLocalizations.of(context).detailsRetry),
               ),
             ],
           ),

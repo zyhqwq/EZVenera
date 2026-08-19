@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_localizations.dart';
+
 class PlaceholderPage extends StatelessWidget {
   const PlaceholderPage({
     required this.title,
@@ -36,13 +38,13 @@ class PlaceholderPage extends StatelessWidget {
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: const [
-                _StatusCard(
+              children: [
+                const _StatusCard(
                   title: 'Phase 0',
                   body: 'Project shell and navigation are in place.',
                 ),
                 _StatusCard(
-                  title: 'Next',
+                  title: AppLocalizations.of(context).categoryNext,
                   body: 'Migrate plugin runtime and source management.',
                 ),
               ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_localizations.dart';
 import '../plugin_runtime/models.dart';
 import '../plugin_runtime/result.dart';
 import '../widgets/comic_card_grid.dart';
@@ -172,7 +173,7 @@ class _CategoryComicsPageState extends State<CategoryComicsPage> {
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: () => _loadPage(1, replace: true),
-                child: const Text('Retry'),
+                child: Text(AppLocalizations.of(context).detailsRetry),
               ),
             ],
           ),
@@ -218,7 +219,13 @@ class _CategoryComicsPageState extends State<CategoryComicsPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.expand_more),
-                label: Text(isLoadingMore ? 'Loading...' : 'Load More'),
+                label: Text(
+                  isLoadingMore
+                      ? (AppLocalizations.of(context).isChinese
+                            ? '加载中...'
+                            : 'Loading...')
+                      : AppLocalizations.of(context).categoryLoadMore,
+                ),
               ),
             ),
           ),
@@ -569,7 +576,7 @@ class _PagedCategoryOptionState extends State<_PagedCategoryOption> {
                           ? null
                           : () => setState(() => _page = currentPage - 1),
                       icon: const Icon(Icons.chevron_left),
-                      tooltip: 'Previous',
+                      tooltip: AppLocalizations.of(context).categoryPrevious,
                     ),
                     const SizedBox(width: 4),
                     IconButton.outlined(
@@ -578,7 +585,7 @@ class _PagedCategoryOptionState extends State<_PagedCategoryOption> {
                           ? null
                           : () => setState(() => _page = currentPage + 1),
                       icon: const Icon(Icons.chevron_right),
-                      tooltip: 'Next',
+                      tooltip: AppLocalizations.of(context).categoryNext,
                     ),
                   ],
                 ),

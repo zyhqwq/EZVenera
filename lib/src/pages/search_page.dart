@@ -128,7 +128,13 @@ class _SearchPageState extends State<SearchPage> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.expand_more),
-                  label: Text(isLoadingMore ? 'Loading...' : 'Load More'),
+                  label: Text(
+                  isLoadingMore
+                      ? (AppLocalizations.of(context).isChinese
+                            ? '加载中...'
+                            : 'Loading...')
+                      : AppLocalizations.of(context).categoryLoadMore,
+                ),
                 ),
               ),
           ],
@@ -490,7 +496,7 @@ class _SearchPageState extends State<SearchPage> {
             _ => throw StateError(l10n.searchLoaderMissing),
           };
           if (response.isError) {
-            throw StateError(response.errorMessage ?? 'Unknown error');
+            throw StateError(response.errorMessage ?? l10n.commonUnknownError);
           }
           _updateAggregateResult(
             run: run,

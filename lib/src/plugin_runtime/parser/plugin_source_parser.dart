@@ -887,7 +887,34 @@ class PluginSourceParser {
       subId: value['subId']?.toString(),
       url: value['url']?.toString(),
       maxPage: (value['maxPage'] as num?)?.toInt(),
+      comments: _comments(value['comments']),
     );
+  }
+
+  List<PluginComicComment>? _comments(dynamic value) {
+    if (value is! List) {
+      return null;
+    }
+    final result = <PluginComicComment>[];
+    for (final item in value) {
+      if (item is! Map) {
+        continue;
+      }
+      result.add(
+        PluginComicComment(
+          userName: item['userName']?.toString() ?? '',
+          content: item['content']?.toString() ?? '',
+          avatar: item['avatar']?.toString(),
+          time: item['time']?.toString(),
+          replyCount: (item['replyCount'] as num?)?.toInt(),
+          id: item['id']?.toString(),
+          isLiked: item['isLiked'] as bool?,
+          score: (item['score'] as num?)?.toInt(),
+          voteStatus: (item['voteStatus'] as num?)?.toInt(),
+        ),
+      );
+    }
+    return result.isEmpty ? null : result;
   }
 
   Map<String, List<String>> _tagMap(dynamic value) {

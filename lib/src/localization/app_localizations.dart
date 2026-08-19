@@ -242,6 +242,7 @@ class AppLocalizations {
       'themeColor.rose': 'Rose',
       'themeColor.blue': 'Blue',
       'themeColor.forest': 'Forest',
+      'details.downloadStartedFor': 'Download started for {title}',
     },
     'zh': {
       'nav.search': '搜索',
@@ -328,6 +329,7 @@ class AppLocalizations {
       'themeColor.rose': '玫瑰',
       'themeColor.blue': '海蓝',
       'themeColor.forest': '森林',
+      'details.downloadStartedFor': '已开始下载：{title}',
     },
   };
 
@@ -715,6 +717,56 @@ class AppLocalizations {
       AppThemePreset.forest => _value('themeColor.forest'),
     };
   }
+
+  String get detailsRead => isChinese ? '阅读' : 'Read';
+  String get detailsContinue => isChinese ? '继续阅读' : 'Continue';
+  String get detailsDownload => isChinese ? '下载' : 'Download';
+  String get detailsDownloadAll =>
+      isChinese ? '下载全部章节' : 'Download All Chapters';
+  String detailsDownloadStartedWith(String title) => isChinese
+      ? '已开始下载：$title'
+      : _value('details.downloadStartedFor').replaceAll('{title}', title);
+  String get detailsFavorite => isChinese ? '收藏' : 'Favorite';
+  String get detailsFavorited => isChinese ? '已收藏' : 'Favorited';
+  String get detailsDescription => isChinese ? '简介' : 'Description';
+  String get detailsTags => isChinese ? '标签' : 'Tags';
+  String get detailsPreview => isChinese ? '预览' : 'Preview';
+  String get detailsChapters => isChinese ? '章节' : 'Chapters';
+  String get detailsOriginal => isChinese ? '正序' : 'Original';
+  String get detailsReverse => isChinese ? '倒序' : 'Reverse';
+  String get detailsRetry => isChinese ? '重试' : 'Retry';
+  String get detailsCopied => isChinese ? '已复制' : 'Copied';
+  String get detailsLoadFailed =>
+      isChinese ? '加载详情失败' : 'Failed to load comic details';
+  String get detailsUnsupportedTagSearch => isChinese
+      ? '该图源不支持标签搜索'
+      : 'This source does not support tag search.';
+  String get detailsUnsupportedCategories => isChinese
+      ? '该图源不支持分类'
+      : 'This source does not support categories.';
+  String get detailsUnsupportedSearch => isChinese
+      ? '该图源不支持搜索'
+      : 'This source does not support search.';
+  String get detailsNoPreviews =>
+      isChinese ? '暂无预览图' : 'No previews available.';
+  String get detailsLoadImageFailed =>
+      isChinese ? '图片加载失败' : 'Failed to load image';
+  String get detailsTitle => isChinese ? '标题' : 'Title';
+  String get detailsSubtitle => isChinese ? '副标题' : 'Subtitle';
+  String get detailsTag => isChinese ? '标签' : 'Tag';
+  String get detailsComments => isChinese ? '评论区' : 'Comments';
+  String get detailsCommentsEmpty => isChinese ? '暂无评论' : 'No comments yet';
+  String get detailsCommentReplies => isChinese ? '条回复' : 'replies';
+  String get categoryLoadMore => isChinese ? '加载更多' : 'Load More';
+  String get categoryPrevious => isChinese ? '上一页' : 'Previous';
+  String get categoryNext => isChinese ? '下一页' : 'Next';
+  String get categoryActions => isChinese ? '操作' : 'Actions';
+  String get categoryRanking => isChinese ? '榜单' : 'Ranking';
+  String get readerLoadPageFailed =>
+      isChinese ? '页面加载失败' : 'Failed to load page';
+  String get webviewLogin => isChinese ? 'Webview 登录' : 'Webview Login';
+  String get webviewReload => isChinese ? '刷新' : 'Reload';
+  String get commonUnknownError => isChinese ? '未知错误' : 'Unknown error';
 }
 
 class _AppLocalizationsDelegate

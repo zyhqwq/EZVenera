@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../library/history_models.dart';
+import '../localization/app_localizations.dart';
 import '../plugin_runtime/models.dart';
 import '../plugin_runtime/plugin_runtime_controller.dart';
 import 'reader_page.dart';
@@ -86,7 +87,7 @@ class _NetworkResumePageState extends State<NetworkResumePage> {
 
   (String?, String) _resolveChapter(PluginComicChapters? chapters) {
     if (chapters == null) {
-      return (widget.entry.chapterId, widget.entry.chapterTitle ?? 'Read');
+      return (widget.entry.chapterId, widget.entry.chapterTitle ?? AppLocalizations.of(context).detailsRead);
     }
 
     final flattened = <MapEntry<String, String>>[];
@@ -111,7 +112,7 @@ class _NetworkResumePageState extends State<NetworkResumePage> {
 
     final first = flattened.firstOrNull;
     if (first == null) {
-      return (widget.entry.chapterId, widget.entry.chapterTitle ?? 'Read');
+      return (widget.entry.chapterId, widget.entry.chapterTitle ?? AppLocalizations.of(context).detailsRead);
     }
     return (first.key, first.value);
   }
@@ -162,7 +163,7 @@ class _ResumeError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(AppLocalizations.of(context).detailsRetry),
             ),
           ],
         ),

@@ -708,7 +708,7 @@ class _LocalPageState extends State<LocalPage> {
   }
 
   void _openDownloadedReader(BuildContext context, DownloadedComic comic) {
-    final firstTitle = comic.chapters.firstOrNull?.title ?? 'Read';
+    final firstTitle = comic.chapters.firstOrNull?.title ?? AppLocalizations.of(context).detailsRead;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => ReaderPage(
