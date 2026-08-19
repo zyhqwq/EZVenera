@@ -125,6 +125,7 @@ class AppLocalizations {
       'sources.install': 'Install',
       'sources.comicSourceList': 'Comic Source List',
       'sources.installLocal': 'Install Local',
+      'sources.installBuiltin': 'Install Built-in Sources',
       'sources.reload': 'Reload',
       'sources.installed': 'Installed {name}',
       'sources.installFailed': 'Failed to install source',
@@ -518,6 +519,8 @@ class AppLocalizations {
       isChinese ? '图源列表' : _value('sources.comicSourceList');
   String get sourcesInstallLocal =>
       isChinese ? '本地安装' : _value('sources.installLocal');
+  String get sourcesInstallBuiltin =>
+      isChinese ? '安装内置图源' : _value('sources.installBuiltin');
   String get sourcesReload => isChinese ? '重新加载' : _value('sources.reload');
   String sourcesInstalled(String name) =>
       (isChinese ? '已安装 {name}' : _value('sources.installed')).replaceAll(
